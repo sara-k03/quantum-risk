@@ -1,29 +1,24 @@
-from tkinter import Frame, Label, Tk
+from tkinter import Frame, Label, LEFT, RIGHT
 
 class StatusPanel(Frame):
     def __init__(self, parent):
-        super().__init__(parent)
-        self.players = {
-            'A': ['North America', 'Europe', 'South America'],
-            'B': ['Asia', 'Australia', 'Africa']
+        super().__init__(parent, bg = "#452d09", height = 50)
+        self.pack_propagate(0)
+        players = {
+            'A': 3,
+            'B': 3
         }
-        self.player_colors = {
-            'A': 'red',
-            'B': 'blue',
+        player_colors = {
+            'A': "#ffc1c1",
+            'B': "#b2bef2",
         }
-        self.create_widgets()
 
-    def create_widgets(self):
-        row = 0
-        for player, territories in self.players.items():
-            color = self.player_colors.get(player, 'black')
-            label = Label(self, text=f"{player}: {len(territories)} territories", fg=color)
-            label.grid(row=row, column=0, padx=10, pady=5, sticky='w')
-            row += 1
+        font_settings = ("Arial", 14, "bold")
 
-if __name__ == "__main__":
-    root = Tk()
-    root.title("Status Panel Test")
-    panel = StatusPanel(root)
-    panel.pack(side='bottom', fill='x')
-    root.mainloop()
+        self.a_label = Label(self, text=f"A: {players['A']} territories",
+                             fg=player_colors["A"], bg="#452d09", font=font_settings, anchor="w")
+        self.a_label.pack(side=LEFT, padx=20, fill="both", expand=True)
+
+        self.b_label = Label(self, text=f"B: {players['B']} territories",
+                             fg=player_colors["B"], bg="#452d09", font=font_settings, anchor="e")
+        self.b_label.pack(side=RIGHT, padx=20, fill="both", expand=True)
