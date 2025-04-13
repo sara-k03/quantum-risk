@@ -26,7 +26,7 @@ def rng( lower, upper ):
     # Aer simulator 
     backend = AerSimulator()
 
-    # Run simulator with multiple shots 
+    # Run simulator with one shots 
     result = backend.run( qc, shots = 1 ).result()
     counts = result.get_counts()
     counts_iterator = iter( counts.items() )
@@ -37,14 +37,61 @@ def rng( lower, upper ):
     
     return measured_int 
 
-# Quantum dice
-def quantum_dice_no_tie():
-    while True:
-        attacker_roll = rng(1, 6)
-        defender_roll = rng(1, 6)
+# Creates a bias by simulating the collapse of the wavefunction 
+# The "bias" corresponds to a non-uniform superposition of states
+def quantum_collapse(possibilities, bias=None):
+    n = len(possibilities) # Number of possible outcomes
+    num_qubits = int(np.ceil(np.log2(n))) # Number of qubits to represent all possibilities
 
-        if attacker_roll != defender_roll:
-            return attacker_roll, defender_roll
+    # Compute weights using the bias function 
+    if bias:
+        weights = np.array([bias(p) for p in possibilities]) # apply bias to all the possibilities
+    else:
+        weights = np.ones(n) # uniform distribution if there is no bias 
+    
+    # Normalize weights to form a probability distribution
+    probabilities = weights / np.sum(weights)
+    amplitudes = np.sqrt(probabilities) # In a linear combination of states the probability is given by the square of the amplitudes  
+
+    # Pad with zeros to fit into a full 2^n quantum state vector (the state vector tells us everything we know about a quantum system)
+    if 2**num_qubits > len(amplitudes):
+        pad_length = 2**num_qubits - len(amplitudes)
+        amplitudes = np.append(amplitudes, [0]*pad_length)
+
+    # Build circuit with specified initial amplitudes
+    qc = QuantumCircuit(num_qubits)
+    qc.initialize(amplitudes, range(num_qubits)) # initialize the quantum state 
+    qc.measure_all() # measure all the qubits 
+
+    # Run the quantum circuit on a simulator with one shot (single measurement )
+    backend = AerSimulator()
+    result = backend.run(qc, shots=1).result()
+    counts = result.get_counts() # get the measurement result 
+    collapsed_index = int(list(counts.keys())[0], 2) # Conver binary string result into an integer
+
+    return possibilities[collapsed_index] # Return the selected collapsed possibility
+
+# Quantum dice
+def quantum_dice_no_tie(attacker, defender):
+    possibilities = [(a, d) for a in range(1, 7) for d in range(1, 7) if a != d]
+
+    # one possibility - no bias 
+
+    def winners_curse(pair): # one possible bias - the more you win, the higher chance you have of winning 
+        a, d = pair
+        a_bias = 1 + 0.2 * (battle_wins[attacker] - battle_wins[defender])
+        d_bias = 1
+        return a_bias if a > d else d_bias
+    
+    # another possibly (very extreme bias) - the attacker pretty much ALWAYS win
+    # but with the quantum distribution of course, there is a very very very small (pretty much impossible) chance the defender still wins 
+    def shakunis_bias(pair): 
+        a, d = pair
+        return 100 if a > d else 1 # strong attacker's bias
+
+    outcome = quantum_collapse(possibilities, bias=winners_curse)
+    return outcome
+
         
 def attack_phase(player):
     enemy = [p for p in players if p != player][0]
@@ -71,7 +118,7 @@ def attack_phase(player):
     defending_territory = valid_targets[idx_to]
 
     # Use tie-proof quantum dice
-    attacker_roll, defender_roll = quantum_dice_no_tie()
+    attacker_roll, defender_roll = quantum_dice_no_tie(player, enemy)
 
     print(f"\n🎲 Quantum Dice Results:")
     print(f"{player} rolled: {attacker_roll}")
@@ -80,9 +127,11 @@ def attack_phase(player):
     if attacker_roll > defender_roll:
         territories[defending_territory]["troops"] -= 1
         print(f"{enemy} loses 1 troop in {defending_territory}.")
+        battle_wins[player] += 1
     else:  # No tie possible, so this covers defender_roll > attacker_roll
         territories[attacking_territory]["troops"] -= 1
         print(f"{player} loses 1 troop in {attacking_territory}.")
+        battle_wins[enemy] += 1
 
     # Check if defender has no troops left
     if territories[defending_territory]["troops"] <= 0:
@@ -134,6 +183,9 @@ def check_winner():
             winner = [p for p in players if p != player][0]
             return winner
     return None
+
+# Win tracker 
+battle_wins = {player: 0 for player in players}
 
 # Game Loop
 def play_risk():
