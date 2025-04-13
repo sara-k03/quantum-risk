@@ -1,5 +1,6 @@
 from tkinter import Tk, Canvas
 from PIL import Image, ImageTk
+import os
 
 # The background of the board
 
@@ -8,19 +9,23 @@ class BoardCanvas(Canvas):
         super().__init__(parent, *args, **kwargs)
         self.troop_data = troop_data
         self.territory_coords = {
-        "North America": (150, 200),
+        "North America": (125, 200),
         "South America": (200, 400),
-        "Asia": (700, 200),
+        "Asia": (650, 200),
         "Europe": (450, 200),
         "Africa": (450, 400),
         "Australia": (800, 500)
         }
 
-        self.red_pawn = ImageTk.PhotoImage(Image.open("RedPawn.png").resize((25, 25)))
-        self.blue_pawn = ImageTk.PhotoImage(Image.open("BluePawn.png").resize((25, 25)))
+        script_dir = os.path.dirname(__file__)
+        red_pawn_path = os.path.join(script_dir, "RedPawn.png")
+        blue_pawn_path = os.path.join(script_dir, "BluePawn.png")
 
-        self.board_img = Image.open("board.jpg")
-        self.board_img_tk = ImageTk.PhotoImage(self.board_img)
+        self.red_pawn = ImageTk.PhotoImage(Image.open(red_pawn_path).resize((25, 25)))
+        self.blue_pawn = ImageTk.PhotoImage(Image.open(blue_pawn_path).resize((25, 25)))
+
+        board_path = os.path.join(script_dir, "board.jpg")
+        self.board_img_tk = ImageTk.PhotoImage(Image.open(board_path))
         self.create_image(0, 0, image = self.board_img_tk, anchor = 'nw')
 
         self.draw_pawns()

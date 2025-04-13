@@ -1,6 +1,7 @@
 from qiskit import QuantumCircuit
 from qiskit_aer import AerSimulator  
 import numpy as np
+from GUI.GameWindow import launch_gui
 
 # SIMPLIFIED, TWO-PLAYER QUANTUM RISK
 # Each player starts with 5 troops in each territory 
@@ -156,7 +157,16 @@ def play_risk():
             print("\nYour Territories:")
             for terr in player_territories[player]:
                 print(f"- {terr} (Troops: {territories[terr]['troops']})")
-            
+
+            while True:
+                choice = input("Press enter to attack, or type 'x' to open GUI: ")
+                if choice == "":
+                    break
+                if choice.lower() == 'x':
+                    launch_gui(player_territories, territories)
+                else:
+                    print("Invalid input.")
+
             # Attack sequence
             attack_phase(player)
         
@@ -166,7 +176,7 @@ def play_risk():
             print(f"\n🏆 {winner} WINS THE GAME! 🏆")
             return
         
-        to_continue = input("Do you want to continue? y/n")
+        to_continue = input("Do you want to continue? y/n: ")
         if ( to_continue == "n" ):
             return
     
